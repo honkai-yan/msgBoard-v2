@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="msgBoard:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/msgBoard_jar</output-path>
-    <root id="archive" name="msgBoard.jar">
-      <element id="module-output" name="msgBoard" />
-    </root>
-  </artifact>
-</component>

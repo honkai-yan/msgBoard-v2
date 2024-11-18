@@ -5,8 +5,6 @@ import com.peter.msgBoard.entity.Response;
 import com.peter.msgBoard.entity.UserEntity;
 import com.peter.msgBoard.utils.Utils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -36,12 +34,14 @@ public class ClientOperations {
         pwd = Utils.md5(pwd);
         if (pwd == null) {
             System.out.println("密码加密失败。");
+            Utils.pressEnter();
             return;
         }
 
         // 不能重复登录一个账户
         if (name.equals(this.client.getCurUserName())) {
             System.out.println(name + " 已登录，请勿重复登录。");
+            Utils.pressEnter();
             return;
         }
 
@@ -54,6 +54,7 @@ public class ClientOperations {
             // 登出请求失败，则登录新用户也失败
             if (logoutRes.getStatusCode() != 200) {
                 System.out.println("登录 " + name + " 失败");
+                Utils.pressEnter();
                 return;
             }
         }
@@ -67,6 +68,7 @@ public class ClientOperations {
             this.client.setCurUserName(name);
             this.client.setHasAuth(name.equals("root"));
             Utils.sleep(1000);
+            Utils.clearConsole();
             this.app.printNewMainMenu();
         }
     }
@@ -79,9 +81,11 @@ public class ClientOperations {
 
         if (response.getStatusCode() == 404) {
             System.out.println("暂无用户");
+            Utils.pressEnter();
         } else {
             System.out.println("服务器所有用户的列表如下：");
             System.out.println(response.getMessage());
+            Utils.pressEnter();
         }
     }
 
@@ -93,9 +97,11 @@ public class ClientOperations {
 
         if (response.getStatusCode() == 404) {
             System.out.println("暂无在线用户");
+            Utils.pressEnter();
         } else {
             System.out.println("在线用户列表如下：");
             System.out.println(response.getMessage());
+            Utils.pressEnter();
         }
     }
 
@@ -114,12 +120,14 @@ public class ClientOperations {
         } catch (Exception ignore) {
             System.out.println("请输入正确格式的端口号。");
             App.scanner.nextLine();
+            Utils.pressEnter();
             return;
         }
         App.scanner.nextLine();
 
         if (port < 0 || port > 65535) {
             System.out.println("请输入正确范围内（0~65535）的端口号。");
+            Utils.pressEnter();
             return;
         }
 
@@ -127,6 +135,7 @@ public class ClientOperations {
             address = new InetSocketAddress(addr, port);
         } catch (Exception ignore) {
             System.out.println("服务器地址参数有误...");
+            Utils.pressEnter();
             return;
         }
 
@@ -140,6 +149,7 @@ public class ClientOperations {
             int _port = this.client.getSocket().getPort();
             if (hostAddress.equals(addr) && _port == port) {
                 System.out.println("已连接到相同服务器，无需重复连接。");
+                Utils.pressEnter();
                 return;
             }
         }
@@ -149,19 +159,24 @@ public class ClientOperations {
         if (!this.client.connectToServer(address, timeout)) {
             System.out.println("连接失败，请检查本地网络和端口。服务器可能处于关闭或繁忙状态。");
             this.client.setLastRequestSuc(false);
+            Utils.pressEnter();
             return;
         }
 
         // 获取服务器响应内容
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(this.client.getSocket().getInputStream()));
-            String res = reader.readLine().trim();
-            String[] resPair = res.split(",");
-            System.out.println(resPair[0]);
+            Response response = this.client.getResponseOfServer(this.client.getSocket());
+            if (this.client.isRequestFailed(response)) {
+                Utils.sleep(1000);
+                return;
+            }
+            System.out.println(response.getMessage());
+            Utils.sleep(1000);
             this.client.setCurUserName(null);
         } catch (Exception ignore) {
             System.out.println("连接服务器成功，但服务器没有任何响应。请检查服务器地址并重新连接。");
             this.client.setLastRequestSuc(false);
+            Utils.pressEnter();
         }
     }
 
@@ -176,6 +191,7 @@ public class ClientOperations {
         if (userName.isEmpty()) return;
         if (userName.length() > 20) {
             System.out.println("请输入长度小于20位的名称");
+            Utils.pressEnter();
             return;
         }
 
@@ -184,6 +200,7 @@ public class ClientOperations {
         if (pwd.isEmpty()) return;
         if (pwd.length() > 15) {
             System.out.println("请输入长度小于15位的密码");
+            Utils.pressEnter();
             return;
         }
 
@@ -192,12 +209,14 @@ public class ClientOperations {
         if (pwdAgain.isEmpty()) return;
         if (!pwd.equals(pwdAgain)) {
             System.out.println("两次输入的密码不相等");
+            Utils.pressEnter();
             return;
         }
 
         pwd = Utils.md5(pwd);
         if (pwd == null) {
             System.out.println("密码加密失败，请重试。");
+            Utils.pressEnter();
             return;
         }
 
@@ -206,6 +225,7 @@ public class ClientOperations {
         if (this.client.isRequestFailed(response)) return;
 
         System.out.println(response.getMessage());
+        Utils.pressEnter();
     }
 
     protected void delUser() {
@@ -222,6 +242,7 @@ public class ClientOperations {
         if (this.client.isRequestFailed(response)) return;
 
         System.out.println(response.getMessage());
+        Utils.pressEnter();
     }
 
     @SuppressWarnings("unchecked")
@@ -229,18 +250,21 @@ public class ClientOperations {
         Response response = this.client.sendRequest(this.client.getSocket(), "displayAllMessages", this.client.getCurUserName(), null);
         if (this.client.isRequestFailed(response)) return;
 
+        Utils.clearConsole();
         int code = response.getStatusCode();
         if (code == 200) {
             ArrayList<String> msgList = Utils.deSerializeObject(response.getData(), ArrayList.class);
             if (msgList == null) {
                 System.out.println("解析数据失败");
+                Utils.pressEnter();
                 return;
             }
-            System.out.println(this.client.getCurUserName() + " 的留言数据如下：");
+            System.out.println(this.client.getCurUserName() + " 的留言数据如下：\n");
             for (final String msg : msgList) {
                 String[] pair = msg.split(",");
                 if (pair.length < 2) {
                     System.out.println("解析数据失败");
+                    Utils.pressEnter();
                     return;
                 }
                 String date = pair[0], content = pair[1];
@@ -251,6 +275,7 @@ public class ClientOperations {
         } else {
             System.out.println(response.getMessage());
         }
+        Utils.pressEnter();
     }
 
     protected void writeNewMessage() {
@@ -259,6 +284,7 @@ public class ClientOperations {
         if (input.isEmpty()) return;
         if (input.length() > 400) {
             System.out.println("留言长度最长为400个字");
+            Utils.pressEnter();
             return;
         }
 
@@ -271,5 +297,6 @@ public class ClientOperations {
         if (this.client.isRequestFailed(response)) return;
 
         System.out.println(response.getMessage());
+        Utils.pressEnter();
     }
 }

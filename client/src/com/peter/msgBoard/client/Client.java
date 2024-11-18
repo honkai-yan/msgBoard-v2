@@ -42,6 +42,7 @@ public class Client {
     protected boolean isNotLogin() {
         if (this.curUserName == null) {
             System.out.println("请先登录");
+            Utils.pressEnter();
             return true;
         }
         return false;
@@ -50,6 +51,7 @@ public class Client {
     protected boolean isNotAuthed() {
         if (!this.hasAuth) {
             System.out.println("您没有权限");
+            Utils.pressEnter();
             return true;
         }
         return false;
@@ -64,6 +66,7 @@ public class Client {
     protected boolean isNotConnected() {
         if (this.socket == null || !this.socket.isConnected() || this.socket.isClosed()) {
             System.out.println("请先连接服务器");
+            Utils.pressEnter();
             return true;
         }
         return false;
@@ -86,6 +89,7 @@ public class Client {
         if (response == null) {
             System.out.println("请求服务器失败...请重新连接服务器。");
             this.setLastRequestSuc(false);
+            Utils.pressEnter();
             return true;
         }
         return false;
@@ -179,7 +183,7 @@ public class Client {
                 binDataBytes = null;
             } else {
                 binDataBytes = Utils.serializeObject(binData);
-                if (binDataBytes == null) return null;
+                if (binDataBytes == null) throw new RuntimeException();
             }
 
             Request request = new Request(data, binDataBytes, questName);
@@ -215,5 +219,22 @@ public class Client {
         Socket socket1 = new Socket();
         socket1.connect(address, timeout);
         return socket1;
+    }
+
+    /**
+     * 从指定客户端套接字实例中读取一个服务器响应。不能滥用，容易导致客户端阻塞。
+     * @param clientSocket 指定的客户端套接字实例
+     * @return 服务器响应对象
+     */
+    protected Response getResponseOfServer(Socket clientSocket) {
+        try {
+            DataInputStream inputStream = new DataInputStream(clientSocket.getInputStream());
+            int resLength = inputStream.readInt();
+            byte[] resBytes = new byte[resLength];
+            inputStream.readFully(resBytes);
+            return Utils.deSerializeObject(resBytes, Response.class);
+        } catch (Exception ignore) {
+            return null;
+        }
     }
 }

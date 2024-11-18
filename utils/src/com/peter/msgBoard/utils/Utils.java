@@ -9,8 +9,12 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.security.MessageDigest;
+import java.util.Scanner;
 
 public class Utils {
+    private static final String OS_NAME = System.getProperty("os.name").toLowerCase();
+    private static final Scanner scanner = new Scanner(System.in);
+
     private Utils() {}
 
     public static String getSysCharset() {
@@ -92,5 +96,25 @@ public class Utils {
     public static void toggleEasterEgg() {
         System.out.println("bingo，你找到了彩蛋！现在去看Clannad吧！");
         openLinkWithDefaultBrowser("https://www.bilibili.com/bangumi/play/ep34489/?share_source=copy_web");
+    }
+
+    public static void clearConsole() {
+        try {
+            if (OS_NAME.contains("win")) {
+                new ProcessBuilder().command("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                new ProcessBuilder().command("clear").inheritIO().start().waitFor();
+            }
+        } catch (Exception ignore) {}
+    }
+
+    public static void pressEnter() {
+        try {
+            System.out.println("按回车键继续...");
+            System.in.read();
+        } catch (Exception ignore) {
+            System.out.println("输入任意内容继续...");
+            scanner.nextLine();
+        }
     }
 }

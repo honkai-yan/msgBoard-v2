@@ -1,5 +1,6 @@
 package com.peter.msgBoard.server;
 
+import com.peter.msgBoard.entity.Response;
 import com.peter.msgBoard.utils.Utils;
 
 import java.io.BufferedWriter;
@@ -33,19 +34,16 @@ public class Server {
         while (true) {
             try {
                 Socket clientSocket = this.serverSocket.accept();
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
                 if (this.onlineUserCnt + 1 > MAX_CONNECTION_NUM) {
                     Utils.printLog(clientSocket, "连接失败，服务器连接数已达上限");
-                    writer.write("服务器连接数已满,403");
-                    writer.newLine();
-                    writer.flush();
+                    Response response = new Response("连接失败，服务器连接数已达上限", null, 403);
+                    RequestHandler.sendResponse(clientSocket, response);
                     clientSocket.close();
                     continue;
                 }
 
-                writer.write("连接成功,200");
-                writer.newLine();
-                writer.flush();
+                Response response = new Response("连接成功", null, 200);
+                RequestHandler.sendResponse(clientSocket, response);
                 this.onlineUserCnt += 1;
                 this.addConnection(clientSocket);
                 new Thread(new RequestHandler(this, clientSocket, this.userManager)).start();

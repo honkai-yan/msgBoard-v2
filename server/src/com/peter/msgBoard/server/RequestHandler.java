@@ -83,6 +83,8 @@ public class RequestHandler implements Runnable {
                     consumer.accept(this, request);
                 } else {
                     Utils.printLog(this.clientSocket, "未知请求：" + requestTarget);
+                    Response response = new Response("未知请求", null, 400);
+                    sendResponse(this.clientSocket, response);
                 }
             } catch (Exception ignore) {
                 closeConnectionWithTip(this);
@@ -128,21 +130,30 @@ public class RequestHandler implements Runnable {
         closeConnection(handler);
     }
 
+    private static void _sendResponse(OutputStream outputStream, byte[] data) throws IOException {
+        DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+        dataOutputStream.writeInt(data.length);
+        dataOutputStream.write(data);
+        dataOutputStream.flush();
+    }
+
     /**
      * 向客户端发送响应
      * @param handler 请求处理实例
      * @param response 响应对象
      */
-    private static void sendResponse(RequestHandler handler, Response response) throws IOException {
+    protected static void sendResponse(RequestHandler handler, Response response) throws IOException {
         byte[] bytes = Utils.serializeObject(response);
         if (bytes == null) throw new RuntimeException();
 
-        DataOutputStream outputStream = new DataOutputStream(handler.outputStream);
-        // 发送数据长度
-        outputStream.writeInt(bytes.length);
-        // 发送字节流数据
-        outputStream.write(bytes);
-        outputStream.flush();
+        _sendResponse(handler.outputStream, bytes);
+    }
+
+    protected static void sendResponse(Socket clientSocket, Response response) throws IOException {
+        byte[] bytes = Utils.serializeObject(response);
+        if (bytes == null) throw new RuntimeException();
+
+        _sendResponse(clientSocket.getOutputStream(), bytes);
     }
 
     private static void handleLogin(RequestHandler handler, Request request) {
@@ -203,7 +214,7 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    protected static void handleDisplayOnlineUsers(RequestHandler handler, Request ignore) {
+    private static void handleDisplayOnlineUsers(RequestHandler handler, Request ignore) {
         try {
             Response response = new Response();
             String onlineUserList = handler.userManager.getOnlineUsersList();
@@ -221,7 +232,7 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    protected static void handleAddUser(RequestHandler handler, Request request) {
+    private static void handleAddUser(RequestHandler handler, Request request) {
         try {
             Response response = new Response();
 
@@ -246,7 +257,7 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    protected static void handleDelUser(RequestHandler handler, Request request) {
+    private static void handleDelUser(RequestHandler handler, Request request) {
         try {
             Response response = new Response();
 
@@ -276,7 +287,7 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    protected static void handleLogout(RequestHandler handler, Request request) {
+    private static void handleLogout(RequestHandler handler, Request request) {
         try {
             Response response = new Response();
 
@@ -294,7 +305,7 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    protected static void handleDisplayAllMessages(RequestHandler handler, Request request) {
+    private static void handleDisplayAllMessages(RequestHandler handler, Request request) {
         try {
             Response response = new Response();
 
@@ -317,7 +328,7 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    protected static void handleWriteNewMessage(RequestHandler handler, Request request) {
+    private static void handleWriteNewMessage(RequestHandler handler, Request request) {
         try {
             Response response = new Response();
 

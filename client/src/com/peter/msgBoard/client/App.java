@@ -22,6 +22,7 @@ public class App {
             "在进行输入操作时，输入空白内容即可退出输入，从而回到命令输入模式",
             "在命令输入模式下，输入\"menu\"可以打印菜单，避免菜单被挤压到过上的位置",
             "程序会检测本地编码，请使用系统的默认编码操作本应用，否则可能出现乱码",
+            "每次连接服务器后，都必须重新进行登录",
             "彩蛋：\"Furukawa Nagisa\"(不分大小写)，希望能给您一些娱乐",
             "在命令输入模式下，输入\"/help\"即可再次打开本说明文档"
     };
@@ -67,6 +68,9 @@ public class App {
     // 二级操作及其方法的映射表
     private final Map<String, Runnable> secondaryOptionMap;
 
+    // 应用是否刚刚启动
+    private boolean isStartedRecently;
+
 
     // ********************************** Functions ************************************* //
 
@@ -75,6 +79,7 @@ public class App {
      * 初始化对象所需的资源，然后调用初始化方法
      */
     protected App(Client client) {
+        this.isStartedRecently = true;
         this.client = client;
         this.operations = new ClientOperations(client, this);
         this.mainOptionMap = new HashMap<>();
@@ -107,18 +112,22 @@ public class App {
         this.secondaryOptionMap.put("/help", this::showHelp);
 
         // 输出欢迎语
-        System.out.println("当前操作系统编码：" + SYSTEM_CHARSET);
         System.out.println();
         System.out.println("欢迎使用本留言板，请输入数字命令进行操作。");
     }
 
     /**
      * 启动应用主循环，进入一级菜单
-     * 1. 循环获取用户输入，根据映射表找到输入操作对应的方法并执行。没找到则打印 “谜之操作...”
+     * 1. 循环获取用户输入，根据映射表找到输入操作对应的方法并执行。
      */
     protected void start() {
-        this.showMainMenu();
         while (true) {
+            if (this.isStartedRecently) {
+                this.isStartedRecently = false;
+            } else {
+                Utils.clearConsole();
+            }
+            this.showMainMenu();
             System.out.print("输入命令：");
             String input = scanner.nextLine().trim();
 
@@ -151,6 +160,7 @@ public class App {
 
     private void _showMenu(int listLen, String[] optionList) {
         String serverAddr = this.client.getServerAddr();
+        System.out.println("当前操作系统编码：" + SYSTEM_CHARSET);
         System.out.println("服务器地址：" + (serverAddr == null ? "暂未连接" : serverAddr));
         System.out.println("输入\"/help\"以打开说明文档");
         System.out.println("------------------------------------------");
@@ -173,30 +183,22 @@ public class App {
         System.out.print("是否要退出应用(y/n)：");
         String input = scanner.nextLine().trim();
         if ("y".equalsIgnoreCase(input)) {
-            if (!this.client.isNotConnected())
+            if (!this.client._isNotConnected())
                 this.client.sendRequest(this.client.getSocket(), "quit", null, null);
             System.out.println("欢迎下次使用！");
             System.exit(0);
         }
-        System.out.println("无事发生...");
     }
 
-    // 打印三个空行
-    protected void printBlank() {
-        System.out.println();
-        System.out.println();
-        System.out.println();
-    }
-
-    // 打印三个空行，然后打印新的主菜单
+    // 打印新的主菜单
     protected void printNewMainMenu() {
-        this.printBlank();
+        Utils.clearConsole();
         this.showMainMenu();
     }
 
-    // 打印三个空行，然后打印新的二级菜单
+    // 打印新的二级菜单
     protected void printNewSecondaryMenu() {
-        this.printBlank();
+        Utils.clearConsole();
         this.showSecondaryMenu();
     }
 
@@ -207,7 +209,6 @@ public class App {
         if (this.client.isNotConnected()) return;
         if (this.client.isNotLogin()) return;
 
-        this.printNewSecondaryMenu();
         this.startSecondaryLoop();
     }
 
@@ -216,9 +217,12 @@ public class App {
      */
     protected void startSecondaryLoop() {
         while (true) {
+            Utils.clearConsole();
+            this.showSecondaryMenu();
             System.out.print("输入命令：");
             String input = scanner.nextLine().trim();
             if (input.equals("3")) {
+                Utils.clearConsole();
                 this.printNewMainMenu();
                 break;
             } else if (input.equals("menu")) {
@@ -231,14 +235,12 @@ public class App {
 
     private void switchOption(String option, Map<String, Runnable> map) {
         Runnable runnable = map.get(option);
-        if (runnable == null) {
-            System.out.println("迷之操作...");
-            return;
-        }
+        if (runnable == null) return;
         runnable.run();
     }
 
     protected void showHelp() {
+        Utils.clearConsole();
         System.out.println("------------------------------------------");
         System.out.println("感谢您使用本应用。");
         System.out.println("程序版本：" + APP_VERSION);
@@ -247,7 +249,6 @@ public class App {
             System.out.println("  " + (i + 1) + ". " + HELP_DOCS[i] + "。");
         }
         System.out.println("------------------------------------------");
-        System.out.print("输入任意内容以回到主页：");
-        scanner.nextLine();
+        Utils.pressEnter();
     }
 }
