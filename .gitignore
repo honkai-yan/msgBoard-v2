@@ -2,6 +2,7 @@
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+!msgBoard_mvn/**/target/
 
 ### Eclipse ###
 .apt_generated
